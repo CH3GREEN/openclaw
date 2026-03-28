@@ -672,6 +672,18 @@ export const OpenClawSchema = z
       })
       .strict()
       .optional(),
+    // IFC (Information Flow Control) Security
+    ifc: z
+      .object({
+        enabled: z.boolean().default(false),
+        throwOnViolation: z.boolean().default(true),
+        debug: z.boolean().default(false),
+        policyMode: z.enum(['strict', 'permissive', 'audit']).default('strict'),
+        queryLlmModel: z.string().default('gpt-4o-mini'),
+        queryLlmProvider: z.string().default('openai'),
+      })
+      .strict()
+      .default({}),
   })
   .strict()
   .superRefine((cfg, ctx) => {

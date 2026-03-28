@@ -72,6 +72,45 @@ export {
   waitForever,
 };
 
+// Security & IFC exports
+export {
+  // IFC Core
+  FidesPlanner,
+  BasicPlanner,
+  PolicyEngine,
+  TaintTracker,
+  createAgentDojoPolicies,
+  createLabel,
+  joinLabels,
+  flowsTo,
+  BOTTOM_LABEL,
+  TOP_LABEL,
+  type SecurityLabel,
+  type LabeledValue,
+  type PlannerState,
+  type ToolMetadata,
+  type PolicyResult,
+  type Action,
+  // Tool wrapper
+  wrapToolWithIFC,
+  getToolMetadata,
+  // Variable management
+  freshVariable,
+  hideValue,
+  hideObject,
+  expandVariables,
+  inspectVariable,
+  // Query LLM
+  executeQueryLlm,
+  type QueryLlmParams,
+  type QueryLlmResult,
+} from './security/ifc/index.js';
+
+// IFC Middleware
+export {
+  IFCSecurityMiddleware,
+} from './middleware/ifc-middleware.js';
+
 const isMain = isMainModule({
   currentFile: fileURLToPath(import.meta.url),
 });

@@ -683,7 +683,15 @@ export const OpenClawSchema = z
         queryLlmProvider: z.string().default('openai'),
       })
       .strict()
-      .default({}),
+      .optional()
+      .default({
+        enabled: false,
+        throwOnViolation: true,
+        debug: false,
+        policyMode: 'strict',
+        queryLlmModel: 'qwen3.5-plus',
+        queryLlmProvider: 'Alibaba',
+      }),
   })
   .strict()
   .superRefine((cfg, ctx) => {

@@ -128,6 +128,7 @@ export const OpenClawSchema = z
       .object({
         lastTouchedVersion: z.string().optional(),
         lastTouchedAt: z.string().optional(),
+        ifcEnhanced: z.boolean().optional(), // IFC enhancement marker
       })
       .strict()
       .optional(),
@@ -197,6 +198,7 @@ export const OpenClawSchema = z
           .optional(),
         redactSensitive: z.union([z.literal("off"), z.literal("tools")]).optional(),
         redactPatterns: z.array(z.string()).optional(),
+        ifc: z.boolean().optional(), // IFC logging toggle
       })
       .strict()
       .optional(),

@@ -238,41 +238,7 @@ Results: XX passed, 0 failed
 
 ---
 
-## 🧪 测试建议
 
-### 1. 单元测试
-
-```typescript
-import { describe, it, expect } from 'vitest';
-import { createIFCExecutor } from 'openclaw';
-
-describe('IFC', () => {
-  it('should allow trusted tool call', () => {
-    const executor = createIFCExecutor({ enabled: true });
-    const result = executor.checkToolCall('read', { path: 'test.txt' });
-    expect(result.allowed).toBe(true);
-  });
-  
-  it('should block untrusted consequential call', () => {
-    // 测试代码...
-  });
-});
-```
-
-### 2. 集成测试
-
-1. 在开发环境启用 IFC
-2. 测试所有工具的正常调用
-3. 测试策略违规场景
-4. 检查审计日志
-
-### 3. 性能测试
-
-- 测量 IFC 开销（预期 <10ms/操作）
-- 测试高并发场景
-- 监控内存使用
-
----
 
 ## ⚠️ 注意事项
 
@@ -296,14 +262,6 @@ describe('IFC', () => {
 
 ---
 
-## 📞 支持与反馈
-
-### 问题排查
-
-1. 查看 `USAGE.md` 使用指南
-2. 启用 debug 模式查看详细日志
-3. 检查工具策略配置
-4. 运行验证脚本
 
 ### 资源链接
 
@@ -312,14 +270,38 @@ describe('IFC', () => {
 - OpenClaw 文档：/usr/lib/node_modules/openclaw/docs
 
 ---
+## 编译指南：
+第一步是运行安装脚本
+```
+deploy-ifc-openclaw.sh
+⏱️ 预计时间：3-5 分钟
+```bash
+# 1. 创建全局目录
+sudo mkdir -p /usr/lib/node_modules/openclaw-ifc
 
-## ✅ 下一步行动
+# 2. 复制编译产物
+sudo cp -r /home/clawdbot/Desktop/openclaw/dist \
+         /usr/lib/node_modules/openclaw-ifc/
 
-1. **测试** - 在开发环境测试 IFC 功能
-2. **调优** - 根据测试结果调整工具策略
-3. **文档** - 更新团队内部文档
-4. **部署** - 在生产环境启用 IFC
-5. **监控** - 定期检查审计日志
+# 3. 复制必要文件
+sudo cp /home/clawdbot/Desktop/openclaw/package.json \
+        /usr/lib/node_modules/openclaw-ifc/
+sudo cp /home/clawdbot/Desktop/openclaw/openclaw.mjs \
+        /usr/lib/node_modules/openclaw-ifc/
+sudo cp -r /home/clawdbot/Desktop/openclaw/scripts \
+         /usr/lib/node_modules/openclaw-ifc/
+sudo cp -r /home/clawdbot/Desktop/openclaw/docs \
+         /usr/lib/node_modules/openclaw-ifc/
+
+# 4. 创建全局命令链接
+sudo ln -sf /usr/lib/node_modules/openclaw-ifc/openclaw.mjs \
+            /usr/bin/openclaw
+
+# 5. 验证
+openclaw --version
+# 应显示：2026.2.23
+```
+
 
 ---
 

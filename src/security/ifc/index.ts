@@ -7,3 +7,4 @@
 
 export * from './core.js';
 export * from './tool-wrapper.js';
+export * from './pi-tools-policy.js';

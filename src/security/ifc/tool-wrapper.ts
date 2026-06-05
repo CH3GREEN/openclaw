@@ -16,6 +16,8 @@ import {
   joinLabels,
   type LabeledValue,
   PolicyViolationError,
+  checkPIIToolCall,
+  isPIITool,
 } from './core.js';
 
 /**
@@ -217,7 +219,20 @@ export function wrapOpenClawToolWithIFC<TArgs extends Record<string, unknown>, T
           );
         }
       }
-      
+      // Check PI-Tools policy for PII-related tools
+      const piiResult = checkPIIToolCall(tool.name, metadata.toolLabel);
+      if (!piiResult.allowed) {
+        throw new PolicyViolationError(
+          `PI-Tools policy violation: ${piiResult.reason}`,
+          {
+            type: 'MakeCall',
+            tool: tool.name,
+            toolLabel: metadata.toolLabel,
+            arguments: args,
+          } as MakeCallAction,
+          piiResult.policyType,
+        );
+      }
       // Execute the tool
       const result = await tool.execute(expandedArgs as TArgs);
       

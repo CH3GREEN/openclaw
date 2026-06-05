@@ -741,6 +741,214 @@ const TOOL_LABEL_RULES: Record<string, Partial<ToolMetadata>> = {
   },
 };
 
+// ==================== PI-Tools 策略定义 ====================
+export enum PIIToolType {
+  /** 身份证号相关 */
+  ID_NUMBER = 'id_number',
+  /** 手机号相关 */
+  PHONE_NUMBER = 'phone_number',
+  /** 银行卡相关 */
+  BANK_CARD = 'bank_card',
+  /** 邮箱地址相关 */
+  EMAIL = 'email',
+  /** 地址相关 */
+  ADDRESS = 'address',
+  /** 姓名相关 */
+  NAME = 'name',
+  /** 通用 PII */
+  GENERAL_PII = 'general_pii'
+}
+
+/**
+ * PII 敏感级别
+ */
+export enum PIISensitivityLevel {
+  /** 高敏感：身份证号、银行卡 */
+  HIGH = 'high',
+  /** 中敏感：手机号、邮箱 */
+  MEDIUM = 'medium',
+  /** 低敏感：姓名、地址 */
+  LOW = 'low'
+}
+
+/**
+ * PII 工具元数据
+ */
+export interface PIIToolMetadata {
+  /** 工具名称 */
+  name: string;
+  /** PII 工具类型 */
+  piiType: PIIToolType;
+  /** 敏感级别 */
+  sensitivity: PIISensitivityLevel;
+  /** 是否需要额外授权 */
+  requiresAuthorization: boolean;
+  /** 允许的上下文标签 */
+  allowedContextLabels: SecurityLabel[];
+}
+
+/**
+ * PII 工具注册表
+ */
+export const PII_TOOL_REGISTRY: Record<string, PIIToolMetadata> = {
+  'get_user_id_number': {
+    name: 'get_user_id_number',
+    piiType: PIIToolType.ID_NUMBER,
+    sensitivity: PIISensitivityLevel.HIGH,
+    requiresAuthorization: true,
+    allowedContextLabels: [
+      { integrity: 'T', confidentiality: new Set(['system', 'admin']) }
+    ]
+  },
+  'get_user_phone': {
+    name: 'get_user_phone',
+    piiType: PIIToolType.PHONE_NUMBER,
+    sensitivity: PIISensitivityLevel.MEDIUM,
+    requiresAuthorization: true,
+    allowedContextLabels: [
+      { integrity: 'T', confidentiality: new Set(['system', 'user']) }
+    ]
+  },
+  'get_user_bank_card': {
+    name: 'get_user_bank_card',
+    piiType: PIIToolType.BANK_CARD,
+    sensitivity: PIISensitivityLevel.HIGH,
+    requiresAuthorization: true,
+    allowedContextLabels: [
+      { integrity: 'T', confidentiality: new Set(['system', 'admin']) }
+    ]
+  },
+  'get_user_email': {
+    name: 'get_user_email',
+    piiType: PIIToolType.EMAIL,
+    sensitivity: PIISensitivityLevel.MEDIUM,
+    requiresAuthorization: false,
+    allowedContextLabels: [
+      { integrity: 'T', confidentiality: new Set(['system', 'user']) }
+    ]
+  },
+  'get_user_address': {
+    name: 'get_user_address',
+    piiType: PIIToolType.ADDRESS,
+    sensitivity: PIISensitivityLevel.LOW,
+    requiresAuthorization: false,
+    allowedContextLabels: [
+      { integrity: 'T', confidentiality: new Set(['system', 'user']) }
+    ]
+  },
+  'get_user_name': {
+    name: 'get_user_name',
+    piiType: PIIToolType.NAME,
+    sensitivity: PIISensitivityLevel.LOW,
+    requiresAuthorization: false,
+    allowedContextLabels: [
+      { integrity: 'T', confidentiality: new Set(['system', 'user']) }
+    ]
+  },
+  'get_user_info': {
+    name: 'get_user_info',
+    piiType: PIIToolType.GENERAL_PII,
+    sensitivity: PIISensitivityLevel.HIGH,
+    requiresAuthorization: true,
+    allowedContextLabels: [
+      { integrity: 'T', confidentiality: new Set(['system', 'admin']) }
+    ]
+  },
+  'update_user_info': {
+    name: 'update_user_info',
+    piiType: PIIToolType.GENERAL_PII,
+    sensitivity: PIISensitivityLevel.HIGH,
+    requiresAuthorization: true,
+    allowedContextLabels: [
+      { integrity: 'T', confidentiality: new Set(['system', 'admin']) }
+    ]
+  }
+};
+
+/**
+ * 检查工具是否是 PII 工具
+ */
+export function isPIITool(toolName: string): boolean {
+  return toolName in PII_TOOL_REGISTRY;
+}
+
+/**
+ * 获取 PII 工具元数据
+ */
+export function getPIIToolMetadata(toolName: string): PIIToolMetadata | undefined {
+  return PII_TOOL_REGISTRY[toolName];
+}
+
+/**
+ * 检查 PII 工具调用是否允许
+ */
+export function checkPIIToolCall(
+  toolName: string,
+  contextLabel: SecurityLabel,
+): {
+  allowed: boolean;
+  reason?: string;
+  policyType: 'PI-Tools';
+  action?: 'allow' | 'block';
+} {
+  const metadata = getPIIToolMetadata(toolName);
+  if (!metadata) {
+    return {
+      allowed: true,
+      policyType: 'PI-Tools'
+    };
+  }
+  
+  // 检查上下文完整性
+  if (contextLabel.integrity !== 'T') {
+    return {
+      allowed: false,
+      reason: `PII tool "${toolName}" requires trusted context (integrity="T"), but got "${contextLabel.integrity}"`,
+      policyType: 'PI-Tools',
+      action: 'block'
+    };
+  }
+  
+  // 检查是否需要额外授权
+  if (metadata.requiresAuthorization) {
+    const hasAdmin = contextLabel.confidentiality.has('admin') ||
+                    contextLabel.confidentiality.has('system');
+    if (!hasAdmin) {
+      return {
+        allowed: false,
+        reason: `PII tool "${toolName}" requires admin authorization (sensitivity: ${metadata.sensitivity})`,
+        policyType: 'PI-Tools',
+        action: 'block'
+      };
+    }
+  }
+  
+  // 检查允许的上下文标签
+  let contextAllowed = false;
+  for (const allowedLabel of metadata.allowedContextLabels) {
+    if (flowsTo(contextLabel, allowedLabel)) {
+      contextAllowed = true;
+      break;
+    }
+  }
+  
+  if (!contextAllowed) {
+    return {
+      allowed: false,
+      reason: `PII tool "${toolName}" context not in allowed labels`,
+      policyType: 'PI-Tools',
+      action: 'block'
+    };
+  }
+  
+  return {
+    allowed: true,
+    policyType: 'PI-Tools',
+    action: 'allow'
+  };
+}
+// ==================== PI-Tools 策略定义结束 ====================
+
 export function getToolMetadata(toolName: string): ToolMetadata {
   const rules = TOOL_LABEL_RULES[toolName] ?? TOOL_LABEL_RULES['default'];
   
